@@ -1,0 +1,168 @@
+<html>
+<head>
+<title>Impromptu Program</title>
+<style>
+td {
+	text-align: center;
+	border: 0;
+}
+body {
+	background-color: blue;
+	color: white;
+}
+input[type=text], textarea {
+	background-color: blue;
+	color: white;
+	text-align: center;
+	border-style: solid;
+	border-width: 1;
+	border-color: white;
+}
+input[type=button] {
+	background-color: blue;
+	color: white;
+	border-style: dashed;
+	border-width: 1;
+	border-color: white;
+}
+</style>
+</head>
+<body>
+<div id="main_area">
+<form id="room_form" onsubmit="buildrooms()">
+<input type="text" name="numrooms"><br>
+<input type="button" onclick="buildrooms()" value="Submit">
+</form>
+</div>
+<script>
+function room(){
+	this.rname;
+	this.idnum;
+	this.speaking;
+	this.prepping;
+	this.stime;
+	var doupdate = true;
+	this.prep = prep;
+	function prep(){
+		if (this.prepping != "" || document.getElementById("room" + this.idnum + "-1").value == "") {
+			if (this.prepping != "") {
+				window.alert("That room already has someone prepping in it");
+			} else {
+				window.alert("Enter a code to start prep");
+			}
+		} else {
+			doupdate = false;
+			ccode = document.getElementById("room" + this.idnum + "-1").value;
+			this.prepping = ccode;
+			document.getElementById("prep-" + this.idnum).innerHTML = this.prepping;
+			this.prepping = ccode;
+			document.getElementById("time-" + this.idnum).innerHTML = "<input type='button' onclick='rooms[" + this.idnum + "].startprep()' value='Start Prep'>";
+			for (x = 1; x <= 4; x++) {
+				document.getElementById("room" + this.idnum + "-" + x).value = document.getElementById("room" + this.idnum + "-" + (x + 1)).value;
+			}
+			document.getElementById("room" + this.idnum + "-5").value = '';
+		}
+	}
+	this.startprep = startprep;
+	function startprep() {
+		var d = new Date();
+		msecs = d.getTime();
+		this.stime = msecs + 300000;
+		document.getElementById("time-" + this.idnum).innerHTML = "5:00";
+		document.getElementById("prep-" + this.idnum).innerHTML = "<input type='button' onclick='rooms[" + this.idnum + "].startspeak()' value='" + this.prepping + "'>";
+		doupdate = true;
+	}
+	this.updatetime = updatetime;
+	function updatetime(){
+		if (this.prepping != "" && doupdate == true) {
+			var d = new Date();
+			timeleft = this.stime - d.getTime();
+			minleft = Math.floor(timeleft/60000);
+			secleft = Math.floor(timeleft/1000) - (60 * minleft);
+			secleft = zeroFill(secleft, 2);
+			document.getElementById("time-" + this.idnum).innerHTML = minleft + ":" + secleft;
+			if (minleft <= 0 && secleft <= 0){
+				window.alert(this.prepping + " in room " + this.rname + " needs to speak.");
+				rooms[this.idnum].startspeak();
+			}
+		} else if (this.prepping == "") {
+			document.getElementById("time-" + this.idnum).innerHTML = "";
+		}
+	}
+	this.startspeak = startspeak;
+	function startspeak() {
+		this.speaking = this.prepping;
+		this.prepping = "";
+		this.stime = "";
+		document.getElementById("time-" + this.idnum).innerHTML = "";
+		document.getElementById("prep-" + this.idnum).innerHTML = "";
+		document.getElementById("speak-" + this.idnum).innerHTML = this.speaking;
+	}
+}
+var rooms = [];
+function buildrooms() {
+	event.preventDefault();
+	var numrooms = document.getElementById("room_form").elements[0].value;
+	string = numrooms + " Rooms<br><form id='room_names' onsubmit='add_rooms()'>";
+	for (x = 1; x <= numrooms; x++){
+		string += "Room " + x + " Name: <input type='text' id='room" + x + "'><br>";
+	}
+	string += "<input type='button' onclick='add_rooms()' value='Submit'></form>";
+	document.getElementById("main_area").innerHTML = string;
+}
+function add_rooms(){
+	event.preventDefault();
+	var f = document.getElementById("room_names").elements;
+	var string = '<table style="width:100%"><tr><td width="' + (100/f.length) + '%">Room Name</td>';
+	for (x = 0; x < (f.length - 1); x++){
+		rooms[rooms.length] = new room();
+		rooms[rooms.length - 1].idnum = x;
+		rooms[rooms.length - 1].rname = f[x].value;
+		string += '<td width="' + (100/f.length) + '%"><input type="button" onclick="rooms[' + x + '].prep()" value="' + rooms[x].rname + '"></td>';
+	}
+	string += "</tr><tr><td>Speaking</td>";
+	for (x = 0; x < (rooms.length); x++){
+		rooms[x].speaking = "";
+		string += '<td id="speak-' + x + '"></td>';
+	}
+	string += "</tr><tr><td>Prepping</td>";
+	for (x = 0; x < (rooms.length); x++){
+		rooms[x].prepping = "";
+		string += '<td id="prep-' + x + '"></td>';
+	}
+	string += "</tr><tr><td>Speak Time</td>";
+	for (x = 0; x < (rooms.length); x++){
+		rooms[x].stime = "";
+		string += '<td id="time-' + x + '"></td>';
+	}
+	string += "</tr><tr><td>Waitlist</td>";
+	for (x = 0; x < (rooms.length); x++){
+		string += '<td><input type="text" size="5" id="room' + x + '-1"></td>';
+	}
+	for (y = 2; y <= 5; y++){
+		string += "</tr><tr><td style='visibility:hidden'></td>";
+		for (x = 0; x < (rooms.length); x++){
+			string += '<td><input type="text" size="5" id="room' + x + '-' + y + '"></td>';
+		}
+	}
+	string += "</tr></table>";
+	document.getElementById("main_area").innerHTML = string;
+	setInterval(function(){update_time()}, 1000)
+}
+function update_time(){
+	for(i = 0; i < rooms.length; i++){
+		rooms[i].updatetime();
+	}
+}
+function zeroFill( number, width )
+{
+  width -= number.toString().length;
+  if ( width > 0 )
+  {
+    return new Array( width + (/\./.test( number ) ? 2 : 1) ).join( '0' ) + number;
+  }
+  return number + ""; // always return a string
+}
+</script>
+</body>
+</html>
